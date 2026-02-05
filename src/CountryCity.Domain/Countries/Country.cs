@@ -33,23 +33,6 @@ public class Country
         CountryName = countryName.Trim();        
     }
 
-    public City AddCity(
-        string cityId, 
-        string countryId, 
-        string cityName, 
-        string createdBy)
-    {
-        if (_cities.Any(c => c.CityId == cityId && c.CountryId == countryId))
-        {
-            throw new DomainException($"City with id '{cityId}' already exists in country '{CountryId}'.");
-        }            
-
-        City? city = new City(cityId, CountryId, cityName, createdBy);
-        _cities.Add(city);
-
-        return city;
-    }
-
     private void SetId(string countryId)
     {
         if (string.IsNullOrWhiteSpace(countryId)) throw new DomainException("countryId is required.");
