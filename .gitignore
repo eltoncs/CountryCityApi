@@ -15,3 +15,7 @@
 /src/CountryCity.Infrastructure/bin/Debug/net8.0
 /src/CountryCity.Infrastructure/obj
 *.props
+/tests/CountryCity.Application.Tests/bin/Debug/net8.0
+/tests/CountryCity.Application.Tests/obj
+/tests/CountryCity.Domain.Tests/bin/Debug/net8.0
+/tests/CountryCity.Domain.Tests/obj
