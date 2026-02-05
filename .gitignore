@@ -1,0 +1,17 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/CountryCityApi/DesignTimeBuild
+/.vs/CountryCityApi/FileContentIndex
+/.vs/CountryCityApi/v18
+/.vs/ProjectEvaluation
+/src/CountryCity.Api/bin/Debug/net8.0
+/src/CountryCity.Api/obj
+/src/CountryCity.Application/bin/Debug/net8.0
+/src/CountryCity.Application/obj
+/src/CountryCity.Domain/bin/Debug/net8.0
+/src/CountryCity.Domain/obj
+/src/CountryCity.Infrastructure/bin/Debug/net8.0
+/src/CountryCity.Infrastructure/obj
+*.props
