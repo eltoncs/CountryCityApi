@@ -3,7 +3,7 @@ using CountryCity.Domain.Countries;
 using FluentAssertions;
 using Xunit;
 
-namespace CountryCity.Domain.Tests.Countries;
+namespace CountryCity.Domain.Tests.Tests;
 
 public class CountryTests
 {
