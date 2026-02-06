@@ -2,6 +2,7 @@ using CountryCity.Application.Dtos;
 using CountryCity.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CountryCity.Api.Controllers;
 
@@ -11,10 +12,12 @@ namespace CountryCity.Api.Controllers;
 public sealed class CountryController : ControllerBase
 {
     private readonly CountryService _service;
+    private readonly IOutputCacheStore _cache;
 
-    public CountryController(CountryService service)
+    public CountryController(CountryService service, IOutputCacheStore cache)
     {
         _service = service;
+        _cache = cache;
     }
 
     /// <summary>
@@ -31,6 +34,8 @@ public sealed class CountryController : ControllerBase
     {
         string userName = User.Identity!.Name!;
         CountryResponse created = await _service.CreateCountryAsync(req, userName, ct);
+        await _cache.EvictByTagAsync("country", ct);
+
         return CreatedAtAction(nameof(Get), new { countryId = created.CountryId }, created);
     }
 
@@ -48,10 +53,11 @@ public sealed class CountryController : ControllerBase
     [HttpGet("getAll")]
     [ProducesResponseType(typeof(CountryResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [OutputCache(PolicyName = "CountryByIdPolicy")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         IReadOnlyList<CountryResponse>? countries = await _service.GetCountriesAsync(ct);
-        return countries is null ? NotFound() : Ok(countries);
+        return Ok(countries ?? Array.Empty<CountryResponse>());
     }
 
     [HttpPut("{countryId}")]
@@ -63,6 +69,8 @@ public sealed class CountryController : ControllerBase
         CancellationToken ct)
     {
         var ok = await _service.UpdateCountryAsync(countryId, req, ct);
+        await _cache.EvictByTagAsync($"country:{countryId}", ct);
+
         return ok ? NoContent() : NotFound();
     }
 
@@ -74,6 +82,8 @@ public sealed class CountryController : ControllerBase
         CancellationToken ct)
     {
         var ok = await _service.DeleteCountryAsync(countryId, ct);
+        await _cache.EvictByTagAsync($"country:{countryId}", ct);
+
         return ok ? NoContent() : NotFound();
     }
 }

@@ -9,6 +9,12 @@ builder.Services.AddControllers();
 builder.AddJWTAuthenticationService();
 builder.AddSwaggerGenService();
 
+builder.Services.AddOutputCache(options =>
+{
+    options.AddPolicy("CitiesByCountryPolicy", new CitiesByCountryOutputCachePolicy());
+    options.AddPolicy("CountryByIdPolicy", new CountryByIdOutputCachePolicy());
+});
+
 builder.Services.InjectDependencies(builder.Configuration);
 
 var app = builder.Build();
@@ -23,6 +29,8 @@ app.UseSwaggerUI();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseOutputCache();
+
 app.MapGet("/", () => Results.Redirect("/swagger"));
 app.MapControllers();
 

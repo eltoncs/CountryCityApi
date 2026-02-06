@@ -2,6 +2,7 @@ using CountryCity.Application.Dtos;
 using CountryCity.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace CountryCity.Api.Controllers;
 
@@ -11,10 +12,12 @@ namespace CountryCity.Api.Controllers;
 public sealed class CityController : ControllerBase
 {
     private readonly CityService _service;
+    private readonly IOutputCacheStore _cache;
 
-    public CityController(CityService service)
+    public CityController(CityService service, IOutputCacheStore cache)
     {
         _service = service;
+        _cache = cache;
     }
 
     [HttpPost]
@@ -27,18 +30,21 @@ public sealed class CityController : ControllerBase
         string userName = User.Identity!.Name!;
         CityResponse created = await _service.CreateCityAsync(req, countryId, userName, ct);
 
+        await _cache.EvictByTagAsync($"cities:{countryId}", ct);
+
         return CreatedAtAction(nameof(GetCity), new { countryId, cityId = created.CityId }, created);
     }
 
     [HttpGet("getAllFromCountry")]
     [ProducesResponseType(typeof(IEnumerable<CityResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [OutputCache(PolicyName = "CitiesByCountryPolicy")]
     public async Task<IActionResult> GetAll(
         [FromRoute] string countryId, 
         CancellationToken ct)
     {
         IReadOnlyList<CityResponse>? cities = await _service.GetCitiesAsync(countryId, ct);
-        return cities is null ? NotFound() : Ok(cities);
+        return Ok(cities ?? Array.Empty<CityResponse>());
     }
 
     [HttpGet("getCity/{cityId}")]
@@ -63,6 +69,8 @@ public sealed class CityController : ControllerBase
         CancellationToken ct)
     {
         var ok = await _service.UpdateCityAsync(countryId, cityId, req, ct);
+
+        await _cache.EvictByTagAsync("cities", ct);
         return ok ? NoContent() : NotFound();
     }
 
@@ -75,6 +83,7 @@ public sealed class CityController : ControllerBase
         CancellationToken ct)
     {
         var ok = await _service.DeleteCityAsync(countryId, cityId, ct);
+        await _cache.EvictByTagAsync($"cities:{countryId}", ct);
         return ok ? NoContent() : NotFound();
     }
 }
