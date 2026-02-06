@@ -62,9 +62,8 @@ dotnet ef database update --project src/CountryCity.Api --startup-project src/Co
 Payload for create:
 ```json
 {
-  "countryId": "US",
-  "countryName": "United States",
-  "creationDate": "2026-02-04T00:00:00Z"
+  "countryId": "us",
+  "countryName": "United States"
 }
 ```
 
@@ -77,12 +76,10 @@ Payload for create:
 Payload for city create:
 ```json
 {
-  "cityId": "00000000-0000-0000-0000-000000000000",
+  "cityId": "nyc",
   "cityName": "New York"
 }
 ```
-
-If `cityId` is empty, the API generates a new GUID.
 
 ## Run tests
 ```bash
