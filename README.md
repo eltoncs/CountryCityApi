@@ -48,6 +48,9 @@ CountryCity.sln
 ## 🔐 Authentication
 
 All endpoints are protected:
+Get a jwt token: 
+ user: admin
+ pw: 123456
 
 ```csharp
 [Authorize]
