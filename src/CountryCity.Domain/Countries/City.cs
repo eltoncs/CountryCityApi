@@ -12,7 +12,6 @@ public class City
         UpdateName(cityName);
 
         CreateDate = DateTime.UtcNow;
-        CityName = cityName.Trim();
         CreatedBy = createdBy;
     }
 

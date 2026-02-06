@@ -22,7 +22,7 @@ public sealed class CityService
         string createdBy, 
         CancellationToken ct)
     {
-        if (await _repo.ExistsAsync(req.CityId, countryId, ct))
+        if (await _repo.ExistsAsync(countryId, req.CityId, ct))
         {
             throw new DomainException($"City '{req.CityId}' already exists.");
         }            
@@ -64,7 +64,7 @@ public sealed class CityService
         UpdateCityRequest req, 
         CancellationToken ct)
     {
-        City? city = await _repo.GetByIdAsync(cityId, countryId, ct);
+        City? city = await _repo.GetByIdAsync(countryId, cityId, ct);
 
         if (city is null)
         {
@@ -78,11 +78,11 @@ public sealed class CityService
     }
 
     public async Task<bool> DeleteCityAsync(
+        string countryId,
         string cityId, 
-        string countryId, 
         CancellationToken ct)
     {
-        City? city = await _repo.GetByIdAsync(cityId, countryId, ct);
+        City? city = await _repo.GetByIdAsync(countryId, cityId, ct);
 
         if (city is null)
         {
