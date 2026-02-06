@@ -1,93 +1,147 @@
-# Country / City REST API (DDD + EF Core + UnitOfWork + Swagger + JWT)
 
-A .NET 8 REST API to manage **Countries** and their **Cities** using:
-- DDD-style layering (Domain / Application / Infrastructure / API)
-- EF Core (Code First) with SQL Server LocalDB
-- Unit of Work
-- Swagger/OpenAPI
-- JWT Bearer Authentication
-- Unit tests (Domain + Application)
+# 🌍 CountryCity API
 
-## Quick start
+> A .NET 8 REST API using **DDD/Clean Architecture**, **JWT authentication**, and **ASP.NET Core OutputCache** with **tag-based eviction**.
 
-### 1) Prereqs
-- .NET SDK 8.x
-- SQL Server LocalDB (Windows)
+This API manages **Countries** and their **Cities**, and demonstrates how to cache list endpoints while keeping data fresh using explicit tag eviction after writes.
 
-### 2) Restore & run
+---
+
+## ✨ Features
+
+- 🧱 Domain-Driven Design (DDD) + clean boundaries
+- 🔐 JWT Bearer Authentication (`[Authorize]` on controllers)
+- ⚡ Output caching **only for selected GET endpoints**
+- 🧹 Cache invalidation using `IOutputCacheStore.EvictByTagAsync(...)`
+- 🗄️ EF Core + SQL Server
+- ✅ Unit tests (Domain + Application)
+
+---
+
+## 🗂️ Solution Structure
+
+```
+CountryCity.sln
+├─ src/
+│  ├─ CountryCity.Domain/
+│  ├─ CountryCity.Application/
+│  ├─ CountryCity.Infrastructure/
+│  └─ CountryCity.Api/
+└─ tests/
+   ├─ CountryCity.Domain.Tests/
+   └─ CountryCity.Application.Tests/
+```
+
+### Layer responsibilities
+
+| Project | Responsibility |
+|---|---|
+| `CountryCity.Domain` | Entities and domain rules (no external dependencies). |
+| `CountryCity.Application` | DTOs + application services (use-cases). |
+| `CountryCity.Infrastructure` | Persistence (EF Core), repositories, DbContext. |
+| `CountryCity.Api` | Controllers, auth, output caching, Swagger, middleware. |
+| `CountryCity.Domain.Tests` | Unit tests for domain rules/invariants. |
+| `CountryCity.Application.Tests` | Unit tests for application services/use-cases. |
+
+---
+
+## 🔐 Authentication
+
+All endpoints are protected:
+
+```csharp
+[Authorize]
+```
+
+The authenticated username (`User.Identity!.Name!`) is used when creating entities (e.g., for audit fields like `CreatedBy`).
+
+---
+
+## ⚡ Output Caching (what is cached)
+
+Only endpoints explicitly decorated with `[OutputCache]` are cached.
+
+### Cached endpoints
+
+| Endpoint | Attribute | Policy |
+|---|---|---|
+| `GET /api/country/getAll` | `[OutputCache]` | `CountryByIdPolicy` |
+| `GET /api/country/{countryId}/cities/getAllFromCountry` | `[OutputCache]` | `CitiesByCountryPolicy` |
+
+> Note: `GET /api/country/{countryId}` and `GET /api/country/{countryId}/cities/getCity/{cityId}` are **not cached**.
+
+---
+
+## 🧹 Cache eviction (tag-based)
+
+After write operations, cache is explicitly evicted using tags:
+
+### CountryController
+
+- **Create country** evicts: `country`
+- **Update/Delete country** evicts: `country:{countryId}`
+
+### CityController
+
+- **Create/Delete city** evicts: `cities:{countryId}`
+
+⚠️ **Inconsistency:** `Update city` currently evicts `cities` (without `{countryId}`).  
+If your cached city list uses country-specific tags (e.g., `cities:{countryId}`), the update eviction should likely be:
+
+```csharp
+await _cache.EvictByTagAsync($"cities:{countryId}", ct);
+```
+
+---
+
+## 📌 API Endpoints
+
+### Countries
+
+| Method | Route |
+|---|---|
+| POST | `/api/country` |
+| GET | `/api/country/getAll` ✅ cached |
+| GET | `/api/country/{countryId}` |
+| PUT | `/api/country/{countryId}` |
+| DELETE | `/api/country/{countryId}` |
+
+### Cities
+
+| Method | Route |
+|---|---|
+| POST | `/api/country/{countryId}/cities` |
+| GET | `/api/country/{countryId}/cities/getAllFromCountry` ✅ cached |
+| GET | `/api/country/{countryId}/cities/getCity/{cityId}` |
+| PUT | `/api/country/{countryId}/cities/{cityId}` |
+| DELETE | `/api/country/{countryId}/cities/{cityId}` |
+
+---
+
+## ▶️ Run locally
+
 ```bash
 dotnet restore
+dotnet ef database update --project src/CountryCity.Infrastructure --startup-project src/CountryCity.Api
 dotnet run --project src/CountryCity.Api
 ```
 
-Swagger UI:
-- https://localhost:<port>/swagger
+Swagger:
 
-## Authentication (Bearer token)
-
-On the **first run**, the app automatically seeds a default user:
-
-- **username:** `admin`
-- **password:** `123456`
-
-Get a token:
-- POST `api/auth/token`
-```json
-{ "username": "admin", "password": "123456" }
+```
+https://localhost:<port>/swagger
 ```
 
-Use it in requests:
-- `Authorization: Bearer <token>`
+---
 
-Swagger also supports Authorize (top-right).
+## ✅ Run tests
 
-> Security note: replace the seed user and password + store credentials securely in real apps.
-
-## Create the database (Code First)
-
-```bash
-dotnet tool install --global dotnet-ef
-dotnet ef migrations add InitialCreate --project src/CountryCity.Api --startup-project src/CountryCity.Api --output-dir Migrations
-dotnet ef database update --project src/CountryCity.Api --startup-project src/CountryCity.Api
-```
-
-## Endpoints (matching your examples)
-
-### Country
-- POST `api/country` (create country)
-- GET `api/country/{countryId}`
-- PUT `api/country/{countryId}`
-- DELETE `api/country/{countryId}`
-
-Payload for create:
-```json
-{
-  "countryId": "US",
-  "countryName": "United States",
-  "creationDate": "2026-02-04T00:00:00Z"
-}
-```
-
-### Cities by Country (friendly routes)
-- POST `api/{countryId}` (add city to a country, e.g. POST `api/US`)
-- GET `api/{countryId}` (get all cities for a country, e.g. GET `api/US`)
-- PUT `api/{countryId}/{cityId}` (update city)
-- DELETE `api/{countryId}/{cityId}` (delete city)
-
-Payload for city create:
-```json
-{
-  "cityId": "00000000-0000-0000-0000-000000000000",
-  "cityName": "New York"
-}
-```
-
-If `cityId` is empty, the API generates a new GUID.
-
-## Run tests
 ```bash
 dotnet test
 ```
 
-## Security note
-Change `Jwt:Key` in `appsettings*.json` to a long random secret (32+ chars).
+---
+
+## 📄 License
+
+MIT
