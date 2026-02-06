@@ -1,12 +1,11 @@
+using CountryCity.Api.Middleware;
 using CountryCity.Application.Abstractions;
 using CountryCity.Application.Services;
 using CountryCity.Infrastructure.Persistence;
 using CountryCity.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace CountryCity.Infrastructure;
+namespace CountryCity;
 
 public static class DependencyInjection
 {
@@ -23,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<CountryService>();
         services.AddScoped<CityService>();
 
+        services.AddTransient<ExceptionHandling>();
         return services;
     }
 }

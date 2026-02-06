@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using CountryCity;
+using CountryCity.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,37 +74,12 @@ builder.Services.InjectDependencies(builder.Configuration);
 
 var app = builder.Build();
 
+app.UseMiddleware<ExceptionHandling>();
+
 await SeedAdminUserAsync(app);
 
 app.UseSwagger();
 app.UseSwaggerUI();
-
-app.UseExceptionHandler(handlerApp =>
-{
-    handlerApp.Run(async context =>
-    {
-        var error = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerPathFeature>()?.Error;
-
-        if (error is DomainException de)
-        {
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            context.Response.ContentType = "application/problem+json";
-
-            var problem = new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Domain validation error",
-                Detail = de.Message
-            };
-
-            await context.Response.WriteAsJsonAsync(problem);
-            return;
-        }
-
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        await context.Response.WriteAsJsonAsync(new { message = "Unexpected error." });
-    });
-});
 
 app.UseAuthentication();
 app.UseAuthorization();

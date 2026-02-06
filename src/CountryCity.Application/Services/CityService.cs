@@ -7,12 +7,14 @@ namespace CountryCity.Application.Services;
 
 public sealed class CityService
 {
-    private readonly ICityRepository _repo;
+    private readonly ICityRepository _cityRepo;
+    private readonly ICountryRepository _countryRepo;
     private readonly IUnitOfWork _uow;
 
-    public CityService(ICityRepository repo, IUnitOfWork uow)
+    public CityService(ICityRepository cityRepo, ICountryRepository countryRepo,IUnitOfWork uow)
     {
-        _repo = repo;
+        _cityRepo = cityRepo;
+        _countryRepo = countryRepo;
         _uow = uow;
     }
 
@@ -22,13 +24,18 @@ public sealed class CityService
         string createdBy, 
         CancellationToken ct)
     {
-        if (await _repo.ExistsAsync(countryId, req.CityId, ct))
+        if (!await _countryRepo.ExistsAsync(countryId, ct))
+        {
+            throw new DomainException($"country '{countryId}' does not exist.");
+        }
+
+        if (await _cityRepo.ExistsAsync(countryId, req.CityId, ct))
         {
             throw new DomainException($"City '{req.CityId}' already exists.");
         }            
 
         City? city = new City(req.CityId, countryId, req.CityName, createdBy);
-        await _repo.AddAsync(city, ct);
+        await _cityRepo.AddAsync(city, ct);
         await _uow.SaveChangesAsync(ct);
 
         return new CityResponse(city.CityId, city.CityName, city.CreateDate, city.CreatedBy);
@@ -38,7 +45,7 @@ public sealed class CityService
         string countryId, 
         CancellationToken ct)
     {
-        List<City>? cities = await _repo.GetByCountryAsync(countryId, ct);
+        List<City>? cities = await _cityRepo.GetByCountryAsync(countryId, ct);
 
         return cities.Select(c => new CityResponse(c.CityId, c.CityName, c.CreateDate, c.CreatedBy)).ToList();
     }
@@ -48,7 +55,7 @@ public sealed class CityService
         string cityId, 
         CancellationToken ct)
     {
-        City? city = await _repo.GetByIdAsync(cityId, countryId, ct);
+        City? city = await _cityRepo.GetByIdAsync(cityId, countryId, ct);
 
         if (city is null)
         {
@@ -64,7 +71,7 @@ public sealed class CityService
         UpdateCityRequest req, 
         CancellationToken ct)
     {
-        City? city = await _repo.GetByIdAsync(countryId, cityId, ct);
+        City? city = await _cityRepo.GetByIdAsync(countryId, cityId, ct);
 
         if (city is null)
         {
@@ -82,14 +89,14 @@ public sealed class CityService
         string cityId, 
         CancellationToken ct)
     {
-        City? city = await _repo.GetByIdAsync(countryId, cityId, ct);
+        City? city = await _cityRepo.GetByIdAsync(countryId, cityId, ct);
 
         if (city is null)
         {
             return false;
         }
 
-        _repo.Remove(city);
+        _cityRepo.Remove(city);
         await _uow.SaveChangesAsync(ct);
         return true;
     }
