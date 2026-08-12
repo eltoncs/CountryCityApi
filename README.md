@@ -88,3 +88,8 @@ dotnet test
 
 ## Security note
 Change `Jwt:Key` in `appsettings*.json` to a long random secret (32+ chars).
+
+## Maintainers
+- Scott
+- Frank
+- Todd
